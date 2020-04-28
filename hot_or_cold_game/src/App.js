@@ -1,32 +1,33 @@
 import React from 'react';
 import { Grid, Typography, Paper, Divider, Button } from '@material-ui/core';
 
-import Form from './components/Form';
-import Progress from './components/Progress';
-import { generateRandomNumber } from './util';
+import { Form, Info, Progress } from './components';
+import { getInitialState, getFeedback } from './util';
+
+import './App.css';
 
 class App extends React.Component{
 
-  state = {
-    generatedNumber: generateRandomNumber(),
-    guess: undefined,
-    allGuesses: [],
-    attempt: 0
-  }
+  state = getInitialState();
+  resetGame = () => this.setState(getInitialState());
 
   updateAppState = (guess) => {
-    const absDiff = Math.abs(guess - this.state.generatedNumber);
+    const { actual } = this.state;
+    const absDiff = Math.abs(guess - actual);
+    const { feedbackMessage, feedbackColor } = getFeedback(absDiff);
 
     this.setState(prevState => ({
       guess, 
-      allGuesses: [ ...prevState.allGuesses, {guess} ],
-      attempt: prevState.attempt + 1
-    }))
+      allGuesses: [ ...prevState.allGuesses, {guess, feedbackColor} ],
+      attempt: prevState.attempt + 1,
+      feedbackMessage,
+      block: absDiff === 0,
+    }));
   }
 
   render(){
 
-    const { allGuesses, attempt } = this.state;
+    const { allGuesses, attempt, feedbackMessage, block, show } = this.state;
 
     const guessList = allGuesses.map((item, index) => (
       <li key={index}>
@@ -40,8 +41,14 @@ class App extends React.Component{
           <Paper style={{ padding: '50px'}} elevation={6}>
             <Typography align='center' variant='h4' gutterBottom>HOT or COLD</Typography>
             <Divider style={{ margin: '20px 0'}}/>
-            <Form returnGuessToApp={guess => this.updateAppState(guess)}/>
-            <Progress attempt={attempt} guessList={guessList}/>
+            <div className={`feedback ${feedbackMessage[0].toLowerCase()}`}>
+              <h2 className="feedback-text">{feedbackMessage}</h2>
+            </div>
+            <Form block={block} returnGuessToApp={guess => this.updateAppState(guess)}/>
+            <Progress feedbackMessage={feedbackMessage} attempt={attempt} guessList={guessList}/>
+            <Button style={{ marginBottom: '15px'}} fullWidth variant="contained" 
+                      color="primary" onClick={this.resetGame}>Reset Game</Button>
+            <Info show={show} onClose={this.handleClose}/>
           </Paper>
         </Grid>
       </Grid>
